@@ -41,8 +41,8 @@ import {
 import { QUESTS, KEY_DESCRIPTIONS } from './constants';
 import { GameState, InventoryItem, Quest, ValidationType, ChatMessage, User, UserRole } from './types';
 
-// --- CORRECTION LEAFLET ---
-// On récupère Leaflet depuis l'objet window du navigateur pour éviter l'erreur "L is not defined"
+// --- CORRECTION CRASH LEAFLET ---
+// On récupère Leaflet depuis l'objet window du navigateur
 const L = (window as any).L;
 
 // --- Services ---
@@ -301,24 +301,21 @@ const MapView = ({ onSelectQuest }: { onSelectQuest: (q: Quest) => void }) => {
 
   // Initialization of Leaflet
   useEffect(() => {
-    // --- SECURITE AJOUTEE ---
-    // Si la variable globale L ou Leaflet n'est pas encore chargée, on arrête tout pour éviter le crash.
-    // On vérifie window.L au cas où la constante globale L définie en haut soit encore undefined.
+    // --- CORRECTION CRASH: Sécurité si L n'est pas encore chargé ---
     const leaflet = L || (window as any).L; 
     
     if (!leaflet || !mapContainerRef.current || mapRef.current) return;
 
-    // Dark Matter tiles from CartoDB
+    // --- CORRECTION CARTE NOIRE: Passage à OpenStreetMap (clair) ---
     mapRef.current = leaflet.map(mapContainerRef.current, {
       center: [playerLoc.lat, playerLoc.lng],
       zoom: 15,
       zoomControl: false,
     });
 
-    leaflet.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; CartoDB',
-      subdomains: 'abcd',
-      maxZoom: 20
+    leaflet.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(mapRef.current);
 
     // Initial markers logic
