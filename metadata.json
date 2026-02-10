@@ -1,0 +1,8 @@
+{
+  "name": "Les Gardiens de la Lumière",
+  "description": "Un jeu en réalité alternée (ARG) mystérieux dans les rues de Paris.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ]
+}
