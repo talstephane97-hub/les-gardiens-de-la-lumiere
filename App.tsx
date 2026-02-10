@@ -1,4 +1,3 @@
-
 import React, { useState, createContext, useContext, useEffect, useRef, useMemo } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
 import { 
@@ -42,8 +41,9 @@ import {
 import { QUESTS, KEY_DESCRIPTIONS } from './constants';
 import { GameState, InventoryItem, Quest, ValidationType, ChatMessage, User, UserRole } from './types';
 
-// Declaration for Leaflet globally
-declare var L: any;
+// --- CORRECTION LEAFLET ---
+// On récupère Leaflet depuis l'objet window du navigateur pour éviter l'erreur "L is not defined"
+const L = (window as any).L;
 
 // --- Services ---
 
@@ -301,16 +301,21 @@ const MapView = ({ onSelectQuest }: { onSelectQuest: (q: Quest) => void }) => {
 
   // Initialization of Leaflet
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    // --- SECURITE AJOUTEE ---
+    // Si la variable globale L ou Leaflet n'est pas encore chargée, on arrête tout pour éviter le crash.
+    // On vérifie window.L au cas où la constante globale L définie en haut soit encore undefined.
+    const leaflet = L || (window as any).L; 
+    
+    if (!leaflet || !mapContainerRef.current || mapRef.current) return;
 
     // Dark Matter tiles from CartoDB
-    mapRef.current = L.map(mapContainerRef.current, {
+    mapRef.current = leaflet.map(mapContainerRef.current, {
       center: [playerLoc.lat, playerLoc.lng],
       zoom: 15,
       zoomControl: false,
     });
 
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    leaflet.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; CartoDB',
       subdomains: 'abcd',
       maxZoom: 20
@@ -329,7 +334,8 @@ const MapView = ({ onSelectQuest }: { onSelectQuest: (q: Quest) => void }) => {
 
   // Update markers and destination line
   const updateMarkers = () => {
-    if (!mapRef.current) return;
+    const leaflet = L || (window as any).L;
+    if (!mapRef.current || !leaflet) return;
 
     // Remove existing destination line
     if (destinationLineRef.current) {
@@ -338,16 +344,16 @@ const MapView = ({ onSelectQuest }: { onSelectQuest: (q: Quest) => void }) => {
 
     // Player Marker
     if (!playerMarkerRef.current) {
-      const playerIcon = L.divIcon({
+      const playerIcon = leaflet.divIcon({
         className: 'custom-div-icon',
         html: `<div class="relative"><div class="absolute -inset-8 bg-blue-500/20 rounded-full animate-radar"></div><div class="w-6 h-6 bg-blue-500 border-2 border-white rounded-full shadow-[0_0_15px_rgba(59,130,246,0.8)]"></div></div>`,
         iconSize: [24, 24],
         iconAnchor: [12, 12]
       });
-      playerMarkerRef.current = L.marker([playerLoc.lat, playerLoc.lng], { icon: playerIcon, zIndexOffset: 1000 }).addTo(mapRef.current);
+      playerMarkerRef.current = leaflet.marker([playerLoc.lat, playerLoc.lng], { icon: playerIcon, zIndexOffset: 1000 }).addTo(mapRef.current);
       
       // Interaction radius
-      playerCircleRef.current = L.circle([playerLoc.lat, playerLoc.lng], {
+      playerCircleRef.current = leaflet.circle([playerLoc.lat, playerLoc.lng], {
         radius: 50,
         color: '#3b82f6',
         weight: 1,
@@ -393,12 +399,12 @@ const MapView = ({ onSelectQuest }: { onSelectQuest: (q: Quest) => void }) => {
       `;
 
       if (!marker) {
-        const icon = L.divIcon({ className: 'custom-div-icon', html: markerHtml, iconSize: [40, 40], iconAnchor: [20, 20] });
-        marker = L.marker([q.coordinates.lat, q.coordinates.lng], { icon }).addTo(mapRef.current);
+        const icon = leaflet.divIcon({ className: 'custom-div-icon', html: markerHtml, iconSize: [40, 40], iconAnchor: [20, 20] });
+        marker = leaflet.marker([q.coordinates.lat, q.coordinates.lng], { icon }).addTo(mapRef.current);
         marker.on('click', () => setSelectedQuestId(q.id));
         questMarkersRef.current.set(q.id, marker);
       } else {
-        const icon = L.divIcon({ className: 'custom-div-icon', html: markerHtml, iconSize: [40, 40], iconAnchor: [20, 20] });
+        const icon = leaflet.divIcon({ className: 'custom-div-icon', html: markerHtml, iconSize: [40, 40], iconAnchor: [20, 20] });
         marker.setIcon(icon);
       }
     });
@@ -406,7 +412,7 @@ const MapView = ({ onSelectQuest }: { onSelectQuest: (q: Quest) => void }) => {
     // Draw Destiny Line to selected quest
     const selectedQuest = QUESTS.find(q => q.id === selectedQuestId);
     if (selectedQuest && selectedQuest.coordinates) {
-      destinationLineRef.current = L.polyline(
+      destinationLineRef.current = leaflet.polyline(
         [[playerLoc.lat, playerLoc.lng], [selectedQuest.coordinates.lat, selectedQuest.coordinates.lng]],
         { color: '#fbbf24', weight: 3, opacity: 0.5, dashArray: '10, 10', className: 'destination-line' }
       ).addTo(mapRef.current);
